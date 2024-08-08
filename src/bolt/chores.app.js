@@ -90,7 +90,7 @@ app.event('app_home_opened', async ({ body, event }) => {
   if (event.tab !== 'home') { return; }
 
   const { now, houseId, residentId } = common.beginHome('chores', body, event);
-  await Admin.activateResident(houseId, residentId, now);
+  await Admin.activateTeammate(houseId, residentId, now);
 
   let view;
   if (choresConf.channel) {

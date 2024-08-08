@@ -1,20 +1,19 @@
 const { expect } = require('chai');
 const chai = require('chai');
 const chaiAsPromised = require('chai-as-promised');
-
 chai.use(chaiAsPromised);
 
 const { Admin } = require('../src/core/index');
-const { HOUR, DAY, CHORES_CONF, THINGS_CONF } = require('../src/constants');
+const { HOUR, DAY } = require('../src/constants');
 const { getMonthStart, getMonthEnd, getNextMonthStart, getPrevMonthEnd, getDateStart } = require('../src/utils');
 const testHelpers = require('./helpers');
 const { db } = require('../src/core/db');
 
 describe('Admin', async () => {
-  const HOUSE1 = testHelpers.generateSlackId();
-  const HOUSE2 = testHelpers.generateSlackId();
-  const RESIDENT1 = testHelpers.generateSlackId();
-  const RESIDENT2 = testHelpers.generateSlackId();
+  const WORKSPACE1 = testHelpers.generateSlackId();
+  const WORKSPACE2 = testHelpers.generateSlackId();
+  const TEAMMATE1 = testHelpers.generateSlackId();
+  const TEAMMATE2 = testHelpers.generateSlackId();
 
   let now;
   let soon;
@@ -28,221 +27,214 @@ describe('Admin', async () => {
     await testHelpers.resetDb();
   });
 
-  describe('keeping track of houses', async () => {
-    it('can add a house', async () => {
-      let numHouses;
+  describe('keeping track of workspaces', async () => {
+    it('can add a workspace', async () => {
+      let numWorkspaces;
 
-      [ numHouses ] = await db('House').count('*');
-      expect(parseInt(numHouses.count)).to.equal(0);
+      [ numWorkspaces ] = await db('Workspace').count('*');
+      expect(parseInt(numWorkspaces.count)).to.equal(0);
 
-      await Admin.addHouse(HOUSE1);
+      await Admin.addWorkspace(WORKSPACE1);
 
-      [ numHouses ] = await db('House').count('*');
-      expect(parseInt(numHouses.count)).to.equal(1);
+      [ numWorkspaces ] = await db('Workspace').count('*');
+      expect(parseInt(numWorkspaces.count)).to.equal(1);
 
-      await Admin.addHouse(HOUSE2);
+      await Admin.addWorkspace(WORKSPACE2);
 
-      [ numHouses ] = await db('House').count('*');
-      expect(parseInt(numHouses.count)).to.equal(2);
+      [ numWorkspaces ] = await db('Workspace').count('*');
+      expect(parseInt(numWorkspaces.count)).to.equal(2);
     });
 
-    it('can add a house idempotently', async () => {
-      let numHouses;
-      [ numHouses ] = await db('House').count('*');
-      expect(parseInt(numHouses.count)).to.equal(0);
+    it('can add a workspace idempotently', async () => {
+      let numWorkspaces;
+      [ numWorkspaces ] = await db('Workspace').count('*');
+      expect(parseInt(numWorkspaces.count)).to.equal(0);
 
-      await Admin.addHouse(HOUSE1);
-      await Admin.addHouse(HOUSE2);
+      await Admin.addWorkspace(WORKSPACE1);
+      await Admin.addWorkspace(WORKSPACE2);
 
-      [ numHouses ] = await db('House').count('*');
-      expect(parseInt(numHouses.count)).to.equal(2);
+      [ numWorkspaces ] = await db('Workspace').count('*');
+      expect(parseInt(numWorkspaces.count)).to.equal(2);
 
-      await Admin.addHouse(HOUSE1);
-      await Admin.addHouse(HOUSE2);
+      await Admin.addWorkspace(WORKSPACE1);
+      await Admin.addWorkspace(WORKSPACE2);
 
-      [ numHouses ] = await db('House').count('*');
-      expect(parseInt(numHouses.count)).to.equal(2);
+      [ numWorkspaces ] = await db('Workspace').count('*');
+      expect(parseInt(numWorkspaces.count)).to.equal(2);
     });
 
-    it('can update house info', async () => {
-      await Admin.addHouse(HOUSE1, 'h1');
+    it('can update workspace info', async () => {
+      await Admin.addWorkspace(WORKSPACE1, 'h1');
 
-      const choresOauth = 'choresOauth';
-      const thingsOauth = 'thingsOauth';
-      const choresChannel = 'choresChannel';
-      const thingsChannel = 'thingsChannel';
+      const oauth = 'oauth';
+      const channel = 'channel';
 
-      await Admin.updateHouseConf(HOUSE1, CHORES_CONF, { channel: choresChannel, oauth: choresOauth });
-      await Admin.updateHouseConf(HOUSE1, THINGS_CONF, { channel: thingsChannel, oauth: thingsOauth });
+      await Admin.updateWorkspaceConfig(WORKSPACE1, { channel, oauth });
 
-      let house;
+      let workspace;
 
-      house = await Admin.getHouse(HOUSE1);
-      expect(house.name).to.equal('h1');
-      expect(house.choresConf.channel).to.equal(choresChannel);
-      expect(house.choresConf.oauth).to.equal(choresOauth);
-      expect(house.thingsConf.channel).to.equal(thingsChannel);
-      expect(house.thingsConf.oauth).to.equal(thingsOauth);
+      workspace = await Admin.getWorkspace(WORKSPACE1);
+      expect(workspace.name).to.equal('h1');
+      expect(workspace.config.channel).to.equal(channel);
+      expect(workspace.config.oauth).to.equal(oauth);
 
-      await Admin.updateHouseConf(HOUSE1, THINGS_CONF, { channel: null });
+      await Admin.updateWorkspaceConfig(WORKSPACE1, { channel: null });
 
-      house = await Admin.getHouse(HOUSE1);
-      expect(house.choresConf.channel).to.equal(choresChannel);
-      expect(house.choresConf.oauth).to.equal(choresOauth);
-      expect(house.thingsConf.channel).to.be.null;
-      expect(house.thingsConf.oauth).to.equal(thingsOauth);
+      workspace = await Admin.getWorkspace(WORKSPACE1);
+      expect(workspace.config.channel).to.be.null;
+      expect(workspace.config.oauth).to.equal(oauth);
     });
   });
 
-  describe('keeping track of residents', async () => {
+  describe('keeping track of teammates', async () => {
     beforeEach(async () => {
-      await Admin.addHouse(HOUSE1);
-      await Admin.addHouse(HOUSE2);
+      await Admin.addWorkspace(WORKSPACE1);
+      await Admin.addWorkspace(WORKSPACE2);
     });
 
-    it('can activate a resident', async () => {
-      let residents;
-      residents = await Admin.getResidents(HOUSE1, now);
-      expect(residents.length).to.equal(0);
+    it('can activate a teammate', async () => {
+      let teammates;
+      teammates = await Admin.getTeammates(WORKSPACE1, now);
+      expect(teammates.length).to.equal(0);
 
-      await Admin.activateResident(HOUSE1, RESIDENT1, now);
+      await Admin.activateTeammate(WORKSPACE1, TEAMMATE1, now);
 
-      residents = await Admin.getResidents(HOUSE1, now);
-      expect(residents.length).to.equal(1);
+      teammates = await Admin.getTeammates(WORKSPACE1, now);
+      expect(teammates.length).to.equal(1);
 
-      await Admin.activateResident(HOUSE1, RESIDENT2, now);
+      await Admin.activateTeammate(WORKSPACE1, TEAMMATE2, now);
 
-      residents = await Admin.getResidents(HOUSE1, now);
-      expect(residents.length).to.equal(2);
+      teammates = await Admin.getTeammates(WORKSPACE1, now);
+      expect(teammates.length).to.equal(2);
 
-      const resident1 = await Admin.getResident(RESIDENT1);
-      expect(resident1.activeAt.getTime()).to.equal(now.getTime());
+      const teammate1 = await Admin.getTeammate(TEAMMATE1);
+      expect(teammate1.activeAt.getTime()).to.equal(now.getTime());
     });
 
-    it('can activate a resident idempotently', async () => {
-      let residents;
-      residents = await Admin.getResidents(HOUSE1, now);
-      expect(residents.length).to.equal(0);
+    it('can activate a teammate idempotently', async () => {
+      let teammates;
+      teammates = await Admin.getTeammates(WORKSPACE1, now);
+      expect(teammates.length).to.equal(0);
 
-      await Admin.activateResident(HOUSE1, RESIDENT1, now);
-      await Admin.activateResident(HOUSE1, RESIDENT1, soon);
+      await Admin.activateTeammate(WORKSPACE1, TEAMMATE1, now);
+      await Admin.activateTeammate(WORKSPACE1, TEAMMATE1, soon);
 
-      residents = await Admin.getResidents(HOUSE1, now);
-      expect(residents.length).to.equal(1);
-      expect(residents[0].activeAt.getTime()).to.equal(now.getTime());
+      teammates = await Admin.getTeammates(WORKSPACE1, now);
+      expect(teammates.length).to.equal(1);
+      expect(teammates[0].activeAt.getTime()).to.equal(now.getTime());
     });
 
-    it('can deactivate a resident', async () => {
-      await Admin.activateResident(HOUSE1, RESIDENT1, now);
+    it('can deactivate a teammate', async () => {
+      await Admin.activateTeammate(WORKSPACE1, TEAMMATE1, now);
 
-      let residents;
-      residents = await Admin.getResidents(HOUSE1, now);
-      expect(residents.length).to.equal(1);
+      let teammates;
+      teammates = await Admin.getTeammates(WORKSPACE1, now);
+      expect(teammates.length).to.equal(1);
 
-      await Admin.deactivateResident(HOUSE1, RESIDENT1);
+      await Admin.deactivateTeammate(WORKSPACE1, TEAMMATE1);
 
-      residents = await Admin.getResidents(HOUSE1, now);
-      expect(residents.length).to.equal(0);
+      teammates = await Admin.getTeammates(WORKSPACE1, now);
+      expect(teammates.length).to.equal(0);
 
-      const resident = await Admin.getResident(RESIDENT1);
-      expect(resident.activeAt).to.equal(null);
+      const teammate = await Admin.getTeammate(TEAMMATE1);
+      expect(teammate.activeAt).to.equal(null);
     });
 
-    it('can exempt a resident', async () => {
-      await Admin.activateResident(HOUSE1, RESIDENT1, now);
+    it('can exempt a teammate', async () => {
+      await Admin.activateTeammate(WORKSPACE1, TEAMMATE1, now);
 
-      let resident;
+      let teammate;
       let isExempt;
 
-      resident = await Admin.getResident(RESIDENT1);
-      isExempt = await Admin.isExempt(RESIDENT1, now);
-      expect(resident.activeAt.getTime()).to.equal(now.getTime());
-      expect(resident.exemptAt).to.equal(null);
+      teammate = await Admin.getTeammate(TEAMMATE1);
+      isExempt = await Admin.isExempt(TEAMMATE1, now);
+      expect(teammate.activeAt.getTime()).to.equal(now.getTime());
+      expect(teammate.exemptAt).to.equal(null);
       expect(isExempt).to.be.false;
 
-      await Admin.exemptResident(HOUSE1, RESIDENT1, soon);
+      await Admin.exemptTeammate(WORKSPACE1, TEAMMATE1, soon);
 
-      resident = await Admin.getResident(RESIDENT1);
-      isExempt = await Admin.isExempt(RESIDENT1, soon);
-      expect(resident.activeAt.getTime()).to.equal(now.getTime());
-      expect(resident.exemptAt.getTime()).to.equal(soon.getTime());
+      teammate = await Admin.getTeammate(TEAMMATE1);
+      isExempt = await Admin.isExempt(TEAMMATE1, soon);
+      expect(teammate.activeAt.getTime()).to.equal(now.getTime());
+      expect(teammate.exemptAt.getTime()).to.equal(soon.getTime());
       expect(isExempt).to.be.true;
 
-      await Admin.unexemptResident(HOUSE1, RESIDENT1, soon);
+      await Admin.unexemptTeammate(WORKSPACE1, TEAMMATE1, soon);
 
-      resident = await Admin.getResident(RESIDENT1);
-      isExempt = await Admin.isExempt(RESIDENT1, soon);
-      expect(resident.activeAt.getTime()).to.equal(soon.getTime());
-      expect(resident.exemptAt).to.equal(null);
+      teammate = await Admin.getTeammate(TEAMMATE1);
+      isExempt = await Admin.isExempt(TEAMMATE1, soon);
+      expect(teammate.activeAt.getTime()).to.equal(soon.getTime());
+      expect(teammate.exemptAt).to.equal(null);
       expect(isExempt).to.be.false;
     });
 
-    it('cannot activate a resident if exempt', async () => {
-      await Admin.activateResident(HOUSE1, RESIDENT1, now);
-      await Admin.exemptResident(HOUSE1, RESIDENT1, soon);
-      await Admin.activateResident(HOUSE1, RESIDENT1, soon);
+    it('cannot activate a teammate if exempt', async () => {
+      await Admin.activateTeammate(WORKSPACE1, TEAMMATE1, now);
+      await Admin.exemptTeammate(WORKSPACE1, TEAMMATE1, soon);
+      await Admin.activateTeammate(WORKSPACE1, TEAMMATE1, soon);
 
-      const resident = await Admin.getResident(RESIDENT1);
-      expect(resident.activeAt.getTime()).to.equal(now.getTime());
-      expect(resident.exemptAt.getTime()).to.equal(soon.getTime());
+      const teammate = await Admin.getTeammate(TEAMMATE1);
+      expect(teammate.activeAt.getTime()).to.equal(now.getTime());
+      expect(teammate.exemptAt.getTime()).to.equal(soon.getTime());
     });
 
-    it('can exempt a resident idempotently if prior exemption exists', async () => {
-      await Admin.activateResident(HOUSE1, RESIDENT1, now);
-      await Admin.exemptResident(HOUSE1, RESIDENT1, now);
+    it('can exempt a teammate idempotently if prior exemption exists', async () => {
+      await Admin.activateTeammate(WORKSPACE1, TEAMMATE1, now);
+      await Admin.exemptTeammate(WORKSPACE1, TEAMMATE1, now);
 
-      let resident;
-      resident = await Admin.getResident(RESIDENT1);
-      expect(resident.exemptAt.getTime()).to.equal(now.getTime());
+      let teammate;
+      teammate = await Admin.getTeammate(TEAMMATE1);
+      expect(teammate.exemptAt.getTime()).to.equal(now.getTime());
 
       // Later exemption has no effect
-      await Admin.exemptResident(HOUSE1, RESIDENT1, soon);
+      await Admin.exemptTeammate(WORKSPACE1, TEAMMATE1, soon);
 
-      resident = await Admin.getResident(RESIDENT1);
-      expect(resident.exemptAt.getTime()).to.equal(now.getTime());
+      teammate = await Admin.getTeammate(TEAMMATE1);
+      expect(teammate.exemptAt.getTime()).to.equal(now.getTime());
 
       // Earlier exemption overwrites current exemption
       const yesterday = new Date(now.getTime() - DAY);
-      await Admin.exemptResident(HOUSE1, RESIDENT1, yesterday);
+      await Admin.exemptTeammate(WORKSPACE1, TEAMMATE1, yesterday);
 
-      resident = await Admin.getResident(RESIDENT1);
-      expect(resident.exemptAt.getTime()).to.equal(yesterday.getTime());
+      teammate = await Admin.getTeammate(TEAMMATE1);
+      expect(teammate.exemptAt.getTime()).to.equal(yesterday.getTime());
     });
 
-    it('can get voting residents', async () => {
-      await Admin.activateResident(HOUSE1, RESIDENT1, now);
-      await Admin.activateResident(HOUSE1, RESIDENT2, now);
+    it('can get voting teammates', async () => {
+      await Admin.activateTeammate(WORKSPACE1, TEAMMATE1, now);
+      await Admin.activateTeammate(WORKSPACE1, TEAMMATE2, now);
 
       let votingResidents;
-      votingResidents = await Admin.getVotingResidents(HOUSE1, now);
+      votingResidents = await Admin.getVotingTeammates(WORKSPACE1, now);
       expect(votingResidents.length).to.equal(2);
 
-      await Admin.exemptResident(HOUSE1, RESIDENT2, soon);
+      await Admin.exemptTeammate(WORKSPACE1, TEAMMATE2, soon);
 
       // Exemption takes effect after exemptAt
-      votingResidents = await Admin.getVotingResidents(HOUSE1, now);
+      votingResidents = await Admin.getVotingTeammates(WORKSPACE1, now);
       expect(votingResidents.length).to.equal(2);
-      votingResidents = await Admin.getVotingResidents(HOUSE1, soon);
+      votingResidents = await Admin.getVotingTeammates(WORKSPACE1, soon);
       expect(votingResidents.length).to.equal(1);
     });
 
     it('can handle many exempt users', async () => {
-      await Admin.activateResident(HOUSE1, RESIDENT1, now);
-      await Admin.activateResident(HOUSE1, RESIDENT2, now);
+      await Admin.activateTeammate(WORKSPACE1, TEAMMATE1, now);
+      await Admin.activateTeammate(WORKSPACE1, TEAMMATE2, now);
 
-      let residents;
+      let teammates;
       let votingResidents;
 
-      residents = await Admin.getResidents(HOUSE1, now);
-      votingResidents = await Admin.getVotingResidents(HOUSE1, now);
-      expect(residents.length).to.equal(2);
+      teammates = await Admin.getTeammates(WORKSPACE1, now);
+      votingResidents = await Admin.getVotingTeammates(WORKSPACE1, now);
+      expect(teammates.length).to.equal(2);
       expect(votingResidents.length).to.equal(2);
 
-      await testHelpers.createExemptUsers(HOUSE1, 10, now);
+      await testHelpers.createExemptUsers(WORKSPACE1, 10, now);
 
-      residents = await Admin.getResidents(HOUSE1, now);
-      votingResidents = await Admin.getVotingResidents(HOUSE1, now);
-      expect(residents.length).to.equal(12);
+      teammates = await Admin.getTeammates(WORKSPACE1, now);
+      votingResidents = await Admin.getVotingTeammates(WORKSPACE1, now);
+      expect(teammates.length).to.equal(12);
       expect(votingResidents.length).to.equal(2);
     });
   });
