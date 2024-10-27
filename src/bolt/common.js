@@ -1,8 +1,7 @@
-const assert = require('assert');
 const voca = require('voca');
 
-const { Admin, Hearts, Polls } = require('../core/index');
-const { SLACKBOT, HOUR, YAY, NAY } = require('../constants');
+const { Admin } = require('../core/index');
+const { SLACKBOT } = require('../constants');
 
 // Utilities
 
@@ -12,7 +11,7 @@ exports.homeEndpoint = function (appName) {
     method: [ 'GET' ],
     handler: async (_, res) => {
       res.writeHead(200);
-      res.end(`Welcome to Chore Wheel - ${appName}!`);
+      res.end(`Welcome to ${appName}!`);
     },
   };
 };
@@ -40,46 +39,46 @@ exports.parseUrl = function (url) {
 
 exports.beginHome = function (appName, body, event) {
   const now = new Date();
-  const houseId = body.team_id;
-  const residentId = event.user;
+  const workspaceId = body.team_id;
+  const teammateId = event.user;
 
-  console.log(`${appName} home - ${houseId} x ${residentId}`);
+  console.log(`${appName} home - ${workspaceId} x ${teammateId}`);
 
-  return { now, houseId, residentId };
+  return { now, workspaceId, teammateId };
 };
 
 exports.beginAction = function (actionName, body) {
   const now = new Date();
-  const houseId = body.team.id;
-  const residentId = body.user.id;
+  const workspaceId = body.team.id;
+  const teammateId = body.user.id;
 
-  console.log(`${actionName} - ${houseId} x ${residentId}`);
+  console.log(`${actionName} - ${workspaceId} x ${teammateId}`);
 
-  return { now, houseId, residentId };
+  return { now, workspaceId, teammateId };
 };
 
 exports.beginCommand = function (commandName, command) {
   const now = new Date();
-  const houseId = command.team_id;
-  const residentId = command.user_id;
+  const workspaceId = command.team_id;
+  const teammateId = command.user_id;
 
-  console.log(`${commandName} - ${houseId} x ${residentId}`);
+  console.log(`${commandName} - ${workspaceId} x ${teammateId}`);
 
-  return { now, houseId, residentId };
+  return { now, workspaceId, teammateId };
 };
 
 // Publishing
 
 exports.replyEphemeral = async function (app, oauth, command, text) {
-  const { channel_id: channelId, user_id: residentId } = command;
-  return exports.postEphemeral(app, oauth, channelId, residentId, text);
+  const { channel_id: channelId, user_id: teammateId } = command;
+  return exports.postEphemeral(app, oauth, channelId, teammateId, text);
 };
 
-exports.postEphemeral = async function (app, oauth, channelId, residentId, text) {
+exports.postEphemeral = async function (app, oauth, channelId, teammateId, text) {
   return app.client.chat.postEphemeral({
     token: oauth.bot.token,
     channel: channelId,
-    user: residentId,
+    user: teammateId,
     text,
   });
 };
@@ -103,10 +102,10 @@ exports.postReply = async function (app, oauth, channelId, ts, text, blocks) {
   });
 };
 
-exports.publishHome = async function (app, oauth, residentId, view) {
+exports.publishHome = async function (app, oauth, teammateId, view) {
   await app.client.views.publish({
     token: oauth.bot.token,
-    user_id: residentId,
+    user_id: teammateId,
     view,
   });
 };
@@ -148,13 +147,6 @@ exports.getMessage = async function (app, oauth, channelId, ts) {
 
 // Internal tools
 
-exports.uninstallApp = async function (app, appName, context) {
-  console.log(`${appName} app_uninstalled - ${context.teamId}`);
-
-  const { installationStore } = app.receiver.installer;
-  await installationStore.deleteInstallation(context);
-};
-
 exports.setChannel = async function (app, oauth, confName, command) {
   if (!(await exports.isAdmin(app, oauth, command))) {
     await exports.replyAdminOnly(app, oauth, command);
@@ -167,8 +159,8 @@ exports.setChannel = async function (app, oauth, confName, command) {
     text = 'Set the current channel as the events channel for the app. ' +
     'The app will use this channel to post polls and share public activity.';
   } else {
-    const [ houseId, channelId ] = [ command.team_id, command.channel_id ];
-    await Admin.updateHouseConf(houseId, confName, { channel: channelId });
+    const [ workspaceId, channelId ] = [ command.team_id, command.channel_id ];
+    await Admin.updateWorkspaceConfig(workspaceId, confName, { channel: channelId });
 
     await app.client.conversations.join({ token: oauth.bot.token, channel: channelId });
     text = `App events channel set to *<#${channelId}>* :fire:`;
@@ -177,7 +169,7 @@ exports.setChannel = async function (app, oauth, confName, command) {
   await exports.replyEphemeral(app, oauth, command, text);
 };
 
-exports.syncWorkspace = async function (app, oauth, command, syncMembers, syncChannels) {
+exports.syncWorkspace = async function (app, oauth, command) {
   const now = new Date();
 
   let text;
@@ -188,60 +180,32 @@ exports.syncWorkspace = async function (app, oauth, command, syncMembers, syncCh
   } else {
     text = 'Synced workspace with ';
 
-    if (syncMembers) {
-      const numResidents = await exports.syncWorkspaceMembers(app, oauth, command.team_id, now);
-      text += `${numResidents} active residents`;
-    }
-
-    if (syncMembers && syncChannels) {
-      text += ' and ';
-    }
-
-    if (syncChannels) {
-      const numChannels = await exports.syncWorkspaceChannels(app, oauth);
-      text += `${numChannels} public channels`;
-    }
+    const numResidents = await exports.syncWorkspaceMembers(app, oauth, command.team_id, now);
+    text += `${numResidents} active residents`;
   }
 
   await exports.replyEphemeral(app, oauth, command, text);
 };
 
-exports.syncWorkspaceMembers = async function (app, oauth, houseId, now) {
+exports.syncWorkspaceMembers = async function (app, oauth, workspaceId, now) {
   const { members } = await app.client.users.list({ token: oauth.bot.token });
 
   for (const member of members) {
-    await exports.syncWorkspaceMember(houseId, member, now);
+    await exports.syncWorkspaceMember(workspaceId, member, now);
   }
 
-  const residents = await Admin.getResidents(houseId, now);
+  const residents = await Admin.getResidents(workspaceId, now);
   return residents.length;
 };
 
-exports.syncWorkspaceMember = async function (houseId, member, now) {
+exports.syncWorkspaceMember = async function (workspaceId, member, now) {
   if (!member.is_bot && member.id !== SLACKBOT) {
     if (member.deleted) {
-      await Admin.deactivateTeammate(houseId, member.id);
+      await Admin.deactivateTeammate(workspaceId, member.id);
     } else {
-      await Admin.activateTeammate(houseId, member.id, now);
-      await Hearts.initialiseResident(houseId, member.id, now);
+      await Admin.activateTeammate(workspaceId, member.id, now);
     }
   }
-};
-
-exports.syncWorkspaceChannels = async function (app, oauth) {
-  const { channels: workspaceChannels } = await app.client.conversations.list({ token: oauth.bot.token, exclude_archived: true });
-  const workspaceChannelIds = workspaceChannels.map(channel => channel.id);
-
-  const { channels: botChannels } = await app.client.users.conversations({ token: oauth.bot.token });
-  const botChannelIds = botChannels.map(channel => channel.id);
-
-  for (const channelId of workspaceChannelIds) {
-    if (!botChannelIds.includes(channelId)) {
-      await exports.joinChannel(app, oauth, channelId);
-    }
-  }
-
-  return workspaceChannels.length;
 };
 
 exports.joinChannel = async function (app, oauth, channelId) {
@@ -251,79 +215,6 @@ exports.joinChannel = async function (app, oauth, channelId) {
 exports.replyAdminOnly = function (app, oauth, command) {
   const text = ':warning: This function is admin-only :warning:';
   return exports.replyEphemeral(app, oauth, command, text);
-};
-
-exports.updateVoteCounts = async function (app, oauth, body, action) {
-  const now = new Date();
-  const channelId = body.channel.id;
-  const residentId = body.user.id;
-
-  if (await Admin.isExempt(residentId, now)) {
-    const text = ':warning: Exempt residents are not allowed to vote :warning:';
-    await exports.postEphemeral(app, oauth, channelId, residentId, text);
-    return;
-  }
-
-  const { pollId, value } = JSON.parse(action.value);
-  await Polls.submitVote(pollId, residentId, now, value);
-
-  // Update the vote counts
-  const { yays, nays } = await Polls.getPollResultCounts(pollId);
-  const voteBlock = body.message.blocks.length - 1;
-  body.message.token = oauth.bot.token;
-  body.message.channel = channelId;
-  body.message.blocks[voteBlock].elements = exports.makeVoteButtons(pollId, yays, nays);
-
-  await app.client.chat.update(body.message);
-};
-
-exports.updateVoteResults = async function (app, oauth, pollId, now) {
-  const { metadata } = await Polls.getPoll(pollId);
-
-  assert(metadata.channel && metadata.ts, `No message found for pollId ${pollId}`);
-
-  const body = await exports.getMessage(app, oauth, metadata.channel, metadata.ts);
-  const message = body.messages[0];
-
-  // Parse current vote counts;
-  const voteBlock = message.blocks.length - 1;
-  const voteButtons = message.blocks[voteBlock].elements;
-  const { yays } = JSON.parse(voteButtons[0].value);
-  const { nays } = JSON.parse(voteButtons[1].value);
-
-  const valid = await Polls.isPollValid(pollId, now);
-  const result = valid ? 'passed' : 'failed';
-  const emoji = valid ? ' :white_check_mark: ' : ' :x: '; // Extra spacing
-  const resultText = `Vote *${result}*, *${yays}* to *${nays}* ${emoji}`;
-
-  // Update the results
-  message.token = oauth.bot.token;
-  message.channel = metadata.channel;
-  message.blocks[voteBlock] = exports.blockSection(resultText);
-
-  await app.client.chat.update(message);
-};
-
-exports.makeVoteText = function (minVotes, pollLength) {
-  return `At least *${minVotes} upvote(s)* are needed to pass, ` +
-    `voting closes in *${pollLength / HOUR} hours*`;
-};
-
-exports.makeVoteButtons = function (pollId, yays, nays) {
-  return [
-    {
-      type: 'button',
-      action_id: 'poll-vote-up',
-      text: exports.blockPlaintext(`:+1: (${yays})`),
-      value: JSON.stringify({ pollId, yays, value: YAY }),
-    },
-    {
-      type: 'button',
-      action_id: 'poll-vote-down',
-      text: exports.blockPlaintext(`:-1: (${nays})`),
-      value: JSON.stringify({ pollId, nays, value: NAY }),
-    },
-  ];
 };
 
 exports.parseTitlecase = function (text) {
