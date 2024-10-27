@@ -14,7 +14,7 @@ curl https://raw.githubusercontent.com/creationix/nvm/master/install.sh | bash
 source ~/.bashrc
 
 # Set up the repository
-git clone https://github.com/zaratanDotWorld/choreWheel.git
+git clone https://github.com/zaratanDotWorld/powerRanker.git
 cd mirror
 nvm use
 npm i

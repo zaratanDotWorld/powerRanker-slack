@@ -1,34 +1,26 @@
 display_information:
-  name: Chores-dev
-  description: Chore wheel x1000
+  name: "Power Ranker"
+  description: Distributed resource allocation made easy
   background_color: "#7a7a7a"
 features:
   app_home:
     home_tab_enabled: true
     messages_tab_enabled: false
   bot_user:
-    display_name: Chores-dev
+    display_name: Power Ranker-dev
     always_online: true
   slash_commands:
-    - command: /chores-channel
+    - command: /power-channel
       url: https://zaratan.ngrok.io/slack/events
       description: Use the current channel for app events
       should_escape: false
-    - command: /chores-sync
+    - command: /power-sync
       url: https://zaratan.ngrok.io/slack/events
       description: Sync active residents
       should_escape: false
-    - command: /chores-stats
+    - command: /power-exempt
       url: https://zaratan.ngrok.io/slack/events
-      description: Show more details about monthly chores
-      should_escape: false
-    - command: /chores-exempt
-      url: https://zaratan.ngrok.io/slack/events
-      description: Exempt residents from chores
-      should_escape: false
-    - command: /chores-reset
-      url: https://zaratan.ngrok.io/slack/events
-      description: Reset chore points
+      description: Exempt residents from power
       should_escape: false
 oauth_config:
   redirect_urls:
@@ -47,7 +39,6 @@ settings:
     bot_events:
       - app_home_opened
       - app_uninstalled
-      - user_change
   interactivity:
     is_enabled: true
     request_url: https://zaratan.ngrok.io/slack/events

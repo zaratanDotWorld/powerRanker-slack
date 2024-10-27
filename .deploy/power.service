@@ -1,0 +1,16 @@
+[Unit]
+Description=Power Ranker
+Documentation=https://github.com/zaratanDotWorld/powerRanker
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/mirror
+ExecStart=/home/ubuntu/.nvm/versions/node/v20.11.0/bin/node --experimental-loader=newrelic/esm-loader.mjs src/bolt/app.js
+Environment="NEW_RELIC_APP_NAME=Power Ranker"
+StandardOutput=append:/home/ubuntu/mirror/logs/power.log
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,3 @@
+logs:
+  - name: power
+    file: /home/ubuntu/mirror/logs/power.log
