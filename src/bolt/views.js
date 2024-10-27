@@ -18,13 +18,17 @@ exports.introView = function () {
   };
 };
 
-exports.homeView = function (exempt) {
+exports.homeView = function (admin, exempt) {
   const header = 'Welcome to Power Ranker';
 
   const actions = [];
   if (!exempt) {
     actions.push(common.blockButton('power-rank', ':scales: Set priorities'));
   }
+  if (admin) {
+    actions.push(common.blockButton('power-upload', ':satellite: Upload items'));
+  }
+  actions.push(common.blockButton('power-download', ':floppy_disk: Download results'));
 
   const blocks = [];
   blocks.push(common.blockHeader(header));
@@ -85,7 +89,39 @@ exports.powerExemptView = function (exemptTeammates) {
   };
 };
 
-// Main actions
+// Upload flow
+
+exports.powerRankUploadView = function () {
+  const header = 'Upload items';
+  const mainText = 'Upload a list of items to prioritize.\n\n' +
+    'Items should be uploaded as JSON with the following format:\n\n' +
+    '`{"items": ["Item 1", "Item 2", "Item 3"]}`';
+
+  const blocks = [];
+  blocks.push(common.blockHeader(header));
+  blocks.push(common.blockSection(mainText));
+  blocks.push(common.blockDivider());
+  blocks.push(common.blockInput(
+    'Items',
+    {
+      type: 'file_input',
+      action_id: 'items',
+      filetypes: [ 'json' ],
+      max_files: 1,
+    },
+  ));
+
+  return {
+    type: 'modal',
+    callback_id: 'power-upload-callback',
+    title: TITLE,
+    close: common.CLOSE,
+    submit: common.SUBMIT,
+    blocks,
+  };
+};
+
+// Ranking flow
 
 exports.powerRankViewNoItems = function () {
   const header = 'Set item priorities';

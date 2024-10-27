@@ -9,19 +9,21 @@ const { PowerRanker } = require('./power');
 
 // Items
 
-exports.addItem = async function (workspaceId, name, metadata) {
+exports.activateItems = async function (workspaceId, names) {
+  const items = names.map((name) => {
+    return { workspaceId, name, active: true };
+  });
+
   return db('Item')
-    .insert({ workspaceId, name, metadata, active: true })
+    .insert(items)
     .onConflict([ 'workspaceId', 'name' ]).merge()
     .returning('*');
 };
 
-// NOTE: also used for deletion
-// NOTE: add and edit are distinct actions, since editing supports name changes
-exports.editItem = async function (itemId, name, metadata, active) {
+exports.deactivateItems = async function (workspaceId) {
   return db('Item')
-    .where({ id: itemId })
-    .update({ name, metadata, active })
+    .where({ workspaceId })
+    .update({ active: false })
     .returning('*');
 };
 

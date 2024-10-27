@@ -27,6 +27,8 @@ const app = new App({
     'channels:join',
     'chat:write',
     'commands',
+    'files:read',
+    'files:write',
     'groups:history',
     'users:read',
   ],
@@ -78,9 +80,10 @@ app.event('app_home_opened', async ({ body, event }) => {
 
   let view;
   if (config.channel) {
+    const admin = await common.isAdmin(app, config.oauth, teammateId);
     const exempt = await Admin.isExempt(teammateId, now);
 
-    view = views.homeView(exempt);
+    view = views.homeView(admin, exempt);
   } else {
     view = views.introView();
   }
@@ -113,7 +116,7 @@ app.command('/power-exempt', async ({ ack, command }) => {
   const commandName = '/power-exempt';
   const { now, workspaceId } = common.beginCommand(commandName, command);
 
-  if (!(await common.isAdmin(app, config.oauth, command))) {
+  if (!(await common.isAdmin(app, config.oauth, command.user_id))) {
     await common.replyAdminOnly(app, config.oauth, command);
     return;
   }
@@ -242,6 +245,40 @@ app.view('power-rank-callback', async ({ ack, body }) => {
   }
 
   await ack({ response_action: 'clear' });
+});
+
+// Upload flow
+
+app.action('power-upload', async ({ ack, body }) => {
+  await ack();
+
+  const actionName = 'power-upload';
+  common.beginAction(actionName, body);
+
+  const view = views.powerRankUploadView();
+  await common.openView(app, config.oauth, body.trigger_id, view);
+});
+
+app.view('power-upload-callback', async ({ ack, body }) => {
+  await ack();
+
+  const actionName = 'power-upload-callback';
+  const { workspaceId, teammateId } = common.beginAction(actionName, body);
+
+  const blockId = body.view.blocks[3].block_id;
+  const [ file ] = body.view.state.values[blockId].items.files;
+
+  const fileObject = await app.client.files.info({
+    token: config.oauth.bot.token,
+    file: file.id,
+  });
+
+  const { items } = JSON.parse(fileObject.content);
+
+  await Items.deactivateItems(workspaceId);
+  await Items.activateItems(workspaceId, items);
+
+  await postMessage(`<@${teammateId}> just uploaded ${items.length} items :rocket:`);
 });
 
 // Launch the app
