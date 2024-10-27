@@ -187,7 +187,7 @@ app.view('power-rank-2', async ({ ack, body }) => {
   const targetItem = JSON.parse(common.getInputBlock(body, -1).item.selected_option.value);
   const itemRankings = await Items.getCurrentItemRankings(workspaceId, now);
 
-  const view = views.itemsRankView2(action, targetItem, itemRankings);
+  const view = views.powerRankView2(action, targetItem, itemRankings);
   await ack({ response_action: 'push', view });
 });
 
@@ -201,11 +201,11 @@ app.view('power-rank-3', async ({ ack, body }) => {
     .map(option => JSON.parse(option.value));
 
   const newPrefs = sourceItems.map((sc) => {
-    return { targetItemId: targetItem.id, sourceItemId: sc.id, preference };
+    return { targetItemId: targetItem.id, sourceItemId: sc.id, value: preference };
   });
 
   // Get the new ranking
-  const filteredPrefs = await Items.filterPreferences(workspaceId, teammateId, newPrefs);
+  const filteredPrefs = await Items.filterPreferences(teammateId, newPrefs);
   const proposedRankings = await Items.getProposedItemRankings(workspaceId, filteredPrefs, now);
   const targetItemRanking = proposedRankings.find(item => item.id === targetItem.id);
 
@@ -213,7 +213,7 @@ app.view('power-rank-3', async ({ ack, body }) => {
   const sourceItemIds = sourceItems.map(sc => sc.id);
   const prefsMetadata = JSON.stringify({ targetItem, sourceItemIds, preference });
 
-  const view = views.itemsRankView3(targetItem, targetItemRanking, prefsMetadata);
+  const view = views.powerRankView3(targetItem, targetItemRanking, prefsMetadata);
   await ack({ response_action: 'push', view });
 });
 
@@ -224,11 +224,11 @@ app.view('power-rank-callback', async ({ ack, body }) => {
   const { targetItem, sourceItemIds, preference } = JSON.parse(body.view.private_metadata);
 
   const newPrefs = sourceItemIds.map((scId) => {
-    return { targetItemId: targetItem.id, sourceItemId: scId, preference };
+    return { targetItemId: targetItem.id, sourceItemId: scId, value: preference };
   });
 
   // Get the new ranking
-  const filteredPrefs = await Items.filterPreferences(workspaceId, teammateId, newPrefs);
+  const filteredPrefs = await Items.filterPreferences(teammateId, newPrefs);
   await Items.setPreferences(workspaceId, filteredPrefs); // Actually set the items
   const itemRankings = await Items.getCurrentItemRankings(workspaceId, now);
   const targetItemRanking = itemRankings.find(item => item.id === targetItem.id);

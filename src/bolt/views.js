@@ -223,7 +223,9 @@ exports.powerRankView2 = function (action, targetItem, itemRankings) {
       action_id: 'items',
       type: 'multi_static_select',
       placeholder: common.blockPlaintext('Choose some items'),
-      options: mapItemRankings(itemRankings),
+      options: mapItemRankings(
+        itemRankings.filter(item => item.id !== targetItem.id),
+      ),
     },
   ));
 
