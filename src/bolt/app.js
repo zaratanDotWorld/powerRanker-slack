@@ -118,10 +118,10 @@ app.command('/power-exempt', async ({ ack, command }) => {
     return;
   }
 
-  const exemptResidents = (await Admin.getResidents(workspaceId, now))
+  const exemptTeammates = (await Admin.getTeammates(workspaceId, now))
     .filter(r => r.exemptAt && r.exemptAt <= now);
 
-  const view = views.itemsExemptView(exemptResidents);
+  const view = views.itemsExemptView(exemptTeammates);
   await common.openView(app, config.oauth, command.trigger_id, view);
 
   await ack();
@@ -139,13 +139,13 @@ app.view('power-exempt-callback', async ({ ack, body }) => {
   switch (action) {
     case 'exempt':
       for (const teammateId of teammateIds) {
-        await Admin.exemptResident(workspaceId, teammateId, now);
+        await Admin.exemptTeammate(workspaceId, teammateId, now);
       }
       text = 'Exemption succeeded :fire:';
       break;
     case 'unexempt':
       for (const teammateId of teammateIds) {
-        await Admin.unexemptResident(workspaceId, teammateId, now);
+        await Admin.unexemptTeammate(workspaceId, teammateId, now);
       }
       text = 'Unexemption succeeded :fire:';
       break;
@@ -167,7 +167,10 @@ app.action('power-rank', async ({ ack, body }) => {
 
   const itemRankings = await Items.getCurrentItemRankings(workspaceId, now);
 
-  const view = views.itemsRankView(itemRankings);
+  const view = (itemRankings.length > 1)
+    ? views.powerRankView(itemRankings)
+    : views.powerRankViewNoItems();
+
   await common.openView(app, config.oauth, body.trigger_id, view);
 
   await ack();

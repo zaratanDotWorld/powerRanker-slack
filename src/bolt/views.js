@@ -23,7 +23,7 @@ exports.homeView = function (exempt) {
 
   const actions = [];
   if (!exempt) {
-    actions.push(common.blockButton('items-rank', 'Set priorities'));
+    actions.push(common.blockButton('power-rank', ':scales: Set priorities'));
   }
 
   const blocks = [];
@@ -40,12 +40,12 @@ exports.homeView = function (exempt) {
 
 // Slash commands
 
-exports.itemsExemptView = function (exemptResidents) {
+exports.powerExemptView = function (exemptTeammates) {
   const header = 'Set item exemptions';
   const mainText = 'Exempt residents are excused from items and cannot create or vote on polls.';
 
   const exemptText = '*Current exemptions:*\n' +
-    exemptResidents
+    exemptTeammates
       .sort((a, b) => a.exemptAt < b.exemptAt)
       .map(r => `\n${r.exemptAt.toDateString()} - <@${r.slackId}>`)
       .join('');
@@ -67,7 +67,7 @@ exports.itemsExemptView = function (exemptResidents) {
     },
   ));
   blocks.push(common.blockInput(
-    'Residents',
+    'Teammates',
     {
       action_id: 'residents',
       type: 'multi_users_select',
@@ -77,7 +77,7 @@ exports.itemsExemptView = function (exemptResidents) {
 
   return {
     type: 'modal',
-    callback_id: 'items-exempt-callback',
+    callback_id: 'power-exempt-callback',
     title: TITLE,
     close: common.CLOSE,
     submit: common.SUBMIT,
@@ -87,7 +87,24 @@ exports.itemsExemptView = function (exemptResidents) {
 
 // Main actions
 
-exports.itemsRankView = function (itemRankings) {
+exports.powerRankViewNoItems = function () {
+  const header = 'Set item priorities';
+  const mainText = 'No items have been added yet.\n\n' +
+    'Upload a list of items using `Upload items`.';
+
+  const blocks = [];
+  blocks.push(common.blockHeader(header));
+  blocks.push(common.blockSection(mainText));
+
+  return {
+    type: 'modal',
+    title: TITLE,
+    close: common.CLOSE,
+    blocks,
+  };
+};
+
+exports.powerRankView = function (itemRankings) {
   const header = 'Set item priorities';
   const mainText = 'If you feel a item should be worth more (or less), you can change it\'s *priority*. ' +
     'The higher priority a item is, the more points it will be worth over time.\n\n' +
@@ -123,7 +140,7 @@ exports.itemsRankView = function (itemRankings) {
   ));
   return {
     type: 'modal',
-    callback_id: 'items-rank-2',
+    callback_id: 'power-rank-2',
     title: TITLE,
     close: common.CLOSE,
     submit: common.NEXT,
@@ -131,7 +148,7 @@ exports.itemsRankView = function (itemRankings) {
   };
 };
 
-exports.itemsRankView2 = function (action, targetItem, itemRankings) {
+exports.powerRankView2 = function (action, targetItem, itemRankings) {
   const prioritize = action === 'prioritize';
   const preferenceOptions = [
     { value: String((prioritize) ? 0.7 : 1 - 0.7), text: common.blockPlaintext('a little') },
@@ -176,7 +193,7 @@ exports.itemsRankView2 = function (action, targetItem, itemRankings) {
 
   return {
     type: 'modal',
-    callback_id: 'items-rank-3',
+    callback_id: 'power-rank-3',
     private_metadata: JSON.stringify({ targetItem }),
     title: TITLE,
     close: common.BACK,
@@ -185,7 +202,7 @@ exports.itemsRankView2 = function (action, targetItem, itemRankings) {
   };
 };
 
-exports.itemsRankView3 = function (targetItem, targetItemRanking, prefsMetadata) {
+exports.powerRankView3 = function (targetItem, targetItemRanking, prefsMetadata) {
   const newPriority = Math.round(targetItemRanking.ranking * 1000);
   const change = newPriority - targetItem.priority;
 
@@ -208,7 +225,7 @@ exports.itemsRankView3 = function (targetItem, targetItemRanking, prefsMetadata)
 
   return {
     type: 'modal',
-    callback_id: 'items-rank-callback',
+    callback_id: 'power-rank-callback',
     private_metadata: prefsMetadata,
     title: TITLE,
     close: common.BACK,

@@ -147,7 +147,7 @@ exports.getMessage = async function (app, oauth, channelId, ts) {
 
 // Internal tools
 
-exports.setChannel = async function (app, oauth, confName, command) {
+exports.setChannel = async function (app, oauth, command) {
   if (!(await exports.isAdmin(app, oauth, command))) {
     await exports.replyAdminOnly(app, oauth, command);
     return;
@@ -160,7 +160,7 @@ exports.setChannel = async function (app, oauth, confName, command) {
     'The app will use this channel to post polls and share public activity.';
   } else {
     const [ workspaceId, channelId ] = [ command.team_id, command.channel_id ];
-    await Admin.updateWorkspaceConfig(workspaceId, confName, { channel: channelId });
+    await Admin.updateWorkspaceConfig(workspaceId, { channel: channelId });
 
     await app.client.conversations.join({ token: oauth.bot.token, channel: channelId });
     text = `App events channel set to *<#${channelId}>* :fire:`;
@@ -180,8 +180,8 @@ exports.syncWorkspace = async function (app, oauth, command) {
   } else {
     text = 'Synced workspace with ';
 
-    const numResidents = await exports.syncWorkspaceMembers(app, oauth, command.team_id, now);
-    text += `${numResidents} active residents`;
+    const numTeammates = await exports.syncWorkspaceMembers(app, oauth, command.team_id, now);
+    text += `${numTeammates} active residents`;
   }
 
   await exports.replyEphemeral(app, oauth, command, text);
@@ -194,7 +194,7 @@ exports.syncWorkspaceMembers = async function (app, oauth, workspaceId, now) {
     await exports.syncWorkspaceMember(workspaceId, member, now);
   }
 
-  const residents = await Admin.getResidents(workspaceId, now);
+  const residents = await Admin.getTeammates(workspaceId, now);
   return residents.length;
 };
 

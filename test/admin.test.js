@@ -205,17 +205,17 @@ describe('Admin', async () => {
       await Admin.activateTeammate(WORKSPACE1, TEAMMATE1, now);
       await Admin.activateTeammate(WORKSPACE1, TEAMMATE2, now);
 
-      let votingResidents;
-      votingResidents = await Admin.getVotingTeammates(WORKSPACE1, now);
-      expect(votingResidents.length).to.equal(2);
+      let votingTeammates;
+      votingTeammates = await Admin.getVotingTeammates(WORKSPACE1, now);
+      expect(votingTeammates.length).to.equal(2);
 
       await Admin.exemptTeammate(WORKSPACE1, TEAMMATE2, soon);
 
       // Exemption takes effect after exemptAt
-      votingResidents = await Admin.getVotingTeammates(WORKSPACE1, now);
-      expect(votingResidents.length).to.equal(2);
-      votingResidents = await Admin.getVotingTeammates(WORKSPACE1, soon);
-      expect(votingResidents.length).to.equal(1);
+      votingTeammates = await Admin.getVotingTeammates(WORKSPACE1, now);
+      expect(votingTeammates.length).to.equal(2);
+      votingTeammates = await Admin.getVotingTeammates(WORKSPACE1, soon);
+      expect(votingTeammates.length).to.equal(1);
     });
 
     it('can handle many exempt users', async () => {
@@ -223,19 +223,19 @@ describe('Admin', async () => {
       await Admin.activateTeammate(WORKSPACE1, TEAMMATE2, now);
 
       let teammates;
-      let votingResidents;
+      let votingTeammates;
 
       teammates = await Admin.getTeammates(WORKSPACE1, now);
-      votingResidents = await Admin.getVotingTeammates(WORKSPACE1, now);
+      votingTeammates = await Admin.getVotingTeammates(WORKSPACE1, now);
       expect(teammates.length).to.equal(2);
-      expect(votingResidents.length).to.equal(2);
+      expect(votingTeammates.length).to.equal(2);
 
       await testHelpers.createExemptUsers(WORKSPACE1, 10, now);
 
       teammates = await Admin.getTeammates(WORKSPACE1, now);
-      votingResidents = await Admin.getVotingTeammates(WORKSPACE1, now);
+      votingTeammates = await Admin.getVotingTeammates(WORKSPACE1, now);
       expect(teammates.length).to.equal(12);
-      expect(votingResidents.length).to.equal(2);
+      expect(votingTeammates.length).to.equal(2);
     });
   });
 

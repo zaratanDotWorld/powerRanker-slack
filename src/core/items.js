@@ -140,6 +140,13 @@ exports.getItemRankings = async function (workspaceId, now, preferences) {
   const items = await exports.getItems(workspaceId);
   const teammates = await Admin.getTeammates(workspaceId, now);
 
+  // Handle the case of less than two items
+  if (items.length <= 1) {
+    return items.map((item) => {
+      return { id: item.id, name: item.name, ranking: 1.0 };
+    });
+  }
+
   const itemsSet = new Set(items.map(c => c.id));
   const formattedPreferences = preferences.map((p) => {
     return { alpha: p.alphaItemId, beta: p.betaItemId, value: p.value };
