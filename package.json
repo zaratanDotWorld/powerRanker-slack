@@ -1,8 +1,8 @@
 {
-  "name": "chorewheel",
-  "version": "0.4.0",
-  "description": "Chore wheel x1000",
-  "repository": "git@github.com:zaratanDotWorld/choreWheel.git",
+  "name": "powerRanker",
+  "version": "0.1.0",
+  "description": "Distributed resource allocation made easy",
+  "repository": "git@github.com:zaratanDotWorld/powerRanker.git",
   "author": "Daniel Kronovet <krono@zaratan.world>",
   "license": "AGPL-3.0-or-later",
   "engines": {
@@ -10,9 +10,7 @@
     "npm": "^10.8.1"
   },
   "scripts": {
-    "app:chores": "node src/bolt/chores.app.js",
-    "app:things": "node src/bolt/things.app.js",
-    "app:hearts": "node src/bolt/hearts.app.js",
+    "app": "node src/bolt/app.js",
     "ngrok": "ngrok http --region=us --hostname=zaratan.ngrok.io 3000",
     "prepare": "husky install",
     "pretest": "npx knex migrate:rollback --all --env test; npx knex migrate:latest --env test",
