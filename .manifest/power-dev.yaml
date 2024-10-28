@@ -1,11 +1,12 @@
 display_information:
-  name: "Power Ranker"
+  name: Power Ranker
   description: Distributed resource allocation made easy
   background_color: "#7a7a7a"
 features:
   app_home:
     home_tab_enabled: true
-    messages_tab_enabled: false
+    messages_tab_enabled: true
+    messages_tab_read_only_enabled: true
   bot_user:
     display_name: Power Ranker-dev
     always_online: true

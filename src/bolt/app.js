@@ -4,7 +4,10 @@ if (process.env.NODE_ENV === 'production') {
   require('newrelic');
 }
 
+const fs = require('fs');
+
 const { App, LogLevel } = require('@slack/bolt');
+const { WebClient } = require('@slack/web-api');
 
 const { Admin, Items } = require('../core/index');
 
@@ -247,7 +250,7 @@ app.view('power-rank-callback', async ({ ack, body }) => {
   await ack({ response_action: 'clear' });
 });
 
-// Upload flow
+// I/O flows
 
 app.action('power-upload', async ({ ack, body }) => {
   await ack();
@@ -273,12 +276,51 @@ app.view('power-upload-callback', async ({ ack, body }) => {
     file: file.id,
   });
 
+  // Format is {"items": ["Item 1", "Item 2", "Item 3"]}
   const { items } = JSON.parse(fileObject.content);
 
   await Items.deactivateItems(workspaceId);
   await Items.activateItems(workspaceId, items);
 
   await postMessage(`<@${teammateId}> just uploaded ${items.length} items :rocket:`);
+});
+
+app.action('power-download', async ({ ack, body }) => {
+  await ack();
+
+  const actionName = 'power-download';
+  common.beginAction(actionName, body);
+
+  const view = views.powerRankDownloadView();
+  await common.openView(app, config.oauth, body.trigger_id, view);
+});
+
+app.view('power-download-callback', async ({ ack, body }) => {
+  await ack();
+
+  const actionName = 'power-download-callback';
+  const { workspaceId, teammateId, now } = common.beginAction(actionName, body);
+
+  const rankings = await Items.getCurrentItemRankings(workspaceId, now);
+
+  // Format is {"preferences": [{ "name": "Item 1", "ranking": 0.2, "name": "Item 2", "ranking": .5}]}
+  const rankingsJson = JSON.stringify(
+    rankings.map(r => ({ name: r.name, ranking: r.ranking })),
+  );
+
+  const filePath = '/tmp/rankings.json';
+  fs.writeFileSync(filePath, rankingsJson);
+
+  // Upload the file to Slack
+  const webClient = new WebClient(config.oauth.bot.token);
+
+  await webClient.filesUploadV2({
+    channel_id: config.channel,
+    file: fs.createReadStream(filePath),
+    filename: `rankings-${now.getTime()}.json`,
+    title: 'Power Ranker results',
+    initial_comment: `<@${teammateId}>, your results are ready!`,
+  });
 });
 
 // Launch the app

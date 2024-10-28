@@ -121,6 +121,26 @@ exports.powerRankUploadView = function () {
   };
 };
 
+// Download flow
+
+exports.powerRankDownloadView = function () {
+  const header = 'Download results';
+  const mainText = 'Generates a JSON file with the current item rankings.';
+
+  const blocks = [];
+  blocks.push(common.blockHeader(header));
+  blocks.push(common.blockSection(mainText));
+
+  return {
+    type: 'modal',
+    callback_id: 'power-download-callback',
+    title: TITLE,
+    close: common.CLOSE,
+    submit: common.SUBMIT,
+    blocks,
+  };
+};
+
 // Ranking flow
 
 exports.powerRankViewNoItems = function () {
@@ -142,14 +162,13 @@ exports.powerRankViewNoItems = function () {
 
 exports.powerRankView = function (itemRankings) {
   const header = 'Set item priorities';
-  const mainText = 'If you feel a item should be worth more (or less), you can change it\'s *priority*. ' +
-    'The higher priority a item is, the more points it will be worth over time.\n\n' +
+  const mainText = 'If you feel a item should be worth more (or less), you can change it\'s *priority*.\n\n' +
     'Priority-setting is a *cumulative, collaborative, and ongoing* process, ' +
     'where every input makes a difference, and anyone can make small (or large) changes at any time.';
 
   const actions = [
-    { value: 'prioritize', text: common.blockPlaintext('prioritize (more points over time)') },
-    { value: 'deprioritize', text: common.blockPlaintext('deprioritize (less points over time)') },
+    { value: 'prioritize', text: common.blockPlaintext('prioritize (higher value)') },
+    { value: 'deprioritize', text: common.blockPlaintext('deprioritize (lower value)') },
   ];
 
   const blocks = [];
@@ -192,11 +211,8 @@ exports.powerRankView2 = function (action, targetItem, itemRankings) {
   ];
 
   const header = 'Set item priorities';
-  const mainText = 'Choose items to update. ' +
-    'Item priorities are measured in *points-per-thousand* (ppt), which always add up to *1000*. ' +
-    'A ppt of *0* means a item gets no points, while a ppt of *1000* means a item gets _all_ the points.\n\n' +
+  const mainText = 'Item priorities are measured in *points-per-thousand* (ppt), which always add up to *1000*. ' +
     'You can think of updating as "taking" priority from some items and giving it to others. ' +
-    '*Example:* "I want to _prioritize_ dishes and _deprioritize_ yardwork."\n\n' +
     '*Some things to keep in mind:*\n\n' +
     '*1.* A *strong preference* has a bigger effect.\n' +
     '*2.* Taking from *high-priority items* has a bigger effect.\n' +
