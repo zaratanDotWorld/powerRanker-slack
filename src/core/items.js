@@ -10,8 +10,16 @@ const { PowerRanker } = require('./power');
 // Items
 
 exports.activateItems = async function (workspaceId, names) {
+  return exports.insertItems(workspaceId, names, true);
+};
+
+exports.deactivateItems = async function (workspaceId, names) {
+  return exports.insertItems(workspaceId, names, false);
+};
+
+exports.insertItems = async function (workspaceId, names, active) {
   const items = names.map((name) => {
-    return { workspaceId, name, active: true };
+    return { workspaceId, name, active };
   });
 
   return db('Item')
@@ -20,24 +28,17 @@ exports.activateItems = async function (workspaceId, names) {
     .returning('*');
 };
 
-exports.deactivateItems = async function (workspaceId) {
-  return db('Item')
-    .where({ workspaceId })
-    .update({ active: false })
-    .returning('*');
-};
-
 exports.getItems = async function (workspaceId) {
   return db('Item')
-    .select('*')
     .where({ workspaceId })
-    .where('active', true);
+    .where('active', true)
+    .select('*');
 };
 
 exports.getItem = async function (itemId) {
   return db('Item')
-    .select('*')
     .where({ id: itemId })
+    .select('*')
     .first();
 };
 

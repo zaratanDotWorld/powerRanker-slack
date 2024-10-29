@@ -42,9 +42,9 @@ describe('Items', async () => {
       await Admin.activateTeammate(WORKSPACE, TEAMMATE1, now);
       await Admin.activateTeammate(WORKSPACE, TEAMMATE2, now);
 
-      [ dishes ] = await Items.addItem(WORKSPACE, 'dishes');
-      [ sweeping ] = await Items.addItem(WORKSPACE, 'sweeping');
-      [ restock ] = await Items.addItem(WORKSPACE, 'restock');
+      [ dishes ] = await Items.activateItems(WORKSPACE, [ 'dishes' ]);
+      [ sweeping ] = await Items.activateItems(WORKSPACE, [ 'sweeping' ]);
+      [ restock ] = await Items.activateItems(WORKSPACE, [ 'restock' ]);
     });
 
     it('can get existing items', async () => {
@@ -121,13 +121,13 @@ describe('Items', async () => {
       expect(preferences.length).to.equal(3);
 
       // Remove the last two preferences
-      await Items.editItem(restock.id, restock.name, {}, false);
+      await Items.deactivateItems(WORKSPACE, [ restock.name ]);
 
       preferences = await Items.getActivePreferences(WORKSPACE, now);
       expect(preferences.length).to.equal(1);
 
       // Restore the last two preferences
-      await Items.addItem(WORKSPACE, restock.name);
+      await Items.activateItems(WORKSPACE, [ restock.name ]);
 
       preferences = await Items.getActivePreferences(WORKSPACE, now);
       expect(preferences.length).to.equal(3);
@@ -198,9 +198,9 @@ describe('Items', async () => {
       await Admin.activateTeammate(WORKSPACE, TEAMMATE2, now);
       await Admin.activateTeammate(WORKSPACE, TEAMMATE3, now);
 
-      [ dishes ] = await Items.addItem(WORKSPACE, 'dishes');
-      [ sweeping ] = await Items.addItem(WORKSPACE, 'sweeping');
-      [ restock ] = await Items.addItem(WORKSPACE, 'restock');
+      [ dishes ] = await Items.activateItems(WORKSPACE, [ 'dishes' ]);
+      [ sweeping ] = await Items.activateItems(WORKSPACE, [ 'sweeping' ]);
+      [ restock ] = await Items.activateItems(WORKSPACE, [ 'restock' ]);
     });
 
     it('can return uniform rankings implicitly', async () => {

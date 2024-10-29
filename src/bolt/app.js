@@ -279,7 +279,9 @@ app.view('power-upload-callback', async ({ ack, body }) => {
   // Format is {"items": ["Item 1", "Item 2", "Item 3"]}
   const { items } = JSON.parse(fileObject.content);
 
-  await Items.deactivateItems(workspaceId);
+  const oldItems = (await Items.getItems(workspaceId)).map(i => i.name);
+  await Items.deactivateItems(workspaceId, oldItems);
+
   await Items.activateItems(workspaceId, items);
 
   await postMessage(`<@${teammateId}> just uploaded ${items.length} items :rocket:`);
