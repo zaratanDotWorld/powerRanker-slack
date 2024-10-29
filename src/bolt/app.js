@@ -1,8 +1,8 @@
 require('dotenv').config();
 
-if (process.env.NODE_ENV === 'production') {
-  require('newrelic');
-}
+// if (process.env.NODE_ENV === 'production') {
+//   require('newrelic');
+// }
 
 const fs = require('fs');
 
