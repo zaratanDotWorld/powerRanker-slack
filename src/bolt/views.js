@@ -6,11 +6,11 @@ const TITLE = common.blockPlaintext('Power Ranker');
 
 exports.introView = function () {
   const header = ':wave::skin-tone-4: Thanks for installing Power Ranker!';
-  const instructions = 'Set an events channel by calling `/power-channel`, which *unlocks the app*.';
+  const mainText = 'Set an events channel by calling `/power-channel`, which *unlocks the app*.';
 
   const blocks = [];
   blocks.push(common.blockHeader(header));
-  blocks.push(common.blockSection(instructions));
+  blocks.push(common.blockSection(mainText));
 
   return {
     type: 'home',
@@ -20,6 +20,8 @@ exports.introView = function () {
 
 exports.homeView = function (admin, exempt) {
   const header = 'Welcome to Power Ranker';
+  const mainText = 'Power Ranker is a tool for collaborative prioritization of items, supporting interoperatiblity.\n\n' +
+    'You can use it to prioritize tasks, projects, or anything else you need to get done.';
 
   const actions = [];
   if (!exempt) {
@@ -32,6 +34,7 @@ exports.homeView = function (admin, exempt) {
 
   const blocks = [];
   blocks.push(common.blockHeader(header));
+  blocks.push(common.blockSection(mainText));
   blocks.push(common.blockSection(common.feedbackLink));
   blocks.push(common.blockDivider());
   blocks.push(common.blockActions(actions));
